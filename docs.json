@@ -31,13 +31,6 @@
             "introduction",
             "quickstart"
           ]
-        },
-        {
-          "group": "Design your docs",
-          "pages": [
-            "components",
-            "customization"
-          ]
         }
       ]
     },
@@ -45,11 +38,9 @@
       "tab": "Guides",
       "groups": [
         {
-          "group": "Work with Thally",
+          "group": "Payments",
           "pages": [
-            "guides/create-a-site",
-            "guides/work-with-the-cli",
-            "guides/connect-ai-tools"
+            "guides/pay-from-an-agent"
           ]
         }
       ]
@@ -68,10 +59,6 @@
       "api": {
         "source": "openapi.yaml"
       }
-    },
-    {
-      "tab": "Changelog",
-      "href": "/changelog"
     }
   ],
   "ai": {

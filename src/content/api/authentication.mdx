@@ -1,53 +1,52 @@
 ---
-title: Authentication
-description: How to authenticate requests, and how to document your own scheme.
+title: Payment headers
+description: How x402 payment headers replace API keys, and how to build and read them with circlekit.
 ---
 
-The Sample Posts API is intentionally public: no key, token, or header is
-required, so every request in this reference works the moment you press
-**Send**.
+An x402 endpoint has no API key. The payment is the credential: a request
+carries a signed USDC authorization, and the server accepts the request once
+Circle Gateway settles that payment.
 
-Your API almost certainly is not public. This page shows how to document the
-two most common schemes so readers always know exactly what to put in the
-request — replace it with the scheme your API uses.
+## Headers
 
-## Documenting a bearer token
+| Header | Direction | Content |
+|--------|-----------|---------|
+| `PAYMENT-REQUIRED` | server to client, on `402` | Base64 JSON: the price, network, and `payTo` address |
+| `PAYMENT-SIGNATURE` | client to server | Base64 JSON: the buyer's signed authorization, the chosen payment option, and the resource |
+| `PAYMENT-RESPONSE` | server to client, on `200` | Base64 JSON: the settlement receipt |
 
-Show the header exactly as readers must send it, then where the token comes
-from:
+## Build and read them with circlekit
 
-```bash
-curl --request GET \
-  --url 'https://api.yourproduct.com/v1/posts' \
-  --header 'Authorization: Bearer YOUR_API_TOKEN'
+Most clients should call `GatewayClient.pay(url)`, which reads
+`PAYMENT-REQUIRED`, signs, and retries with `PAYMENT-SIGNATURE` for you. See
+[Pay from a Python agent](/guides/pay-from-an-agent).
+
+To handle the headers yourself:
+
+```python
+import httpx
+from circlekit import PrivateKeySigner
+from circlekit.x402 import create_payment_header, decode_payment_required
+
+signer = PrivateKeySigner("0xYourTestPrivateKey")
+
+first = httpx.get("http://localhost:8000/forecast")
+x402 = decode_payment_required(first.headers["payment-required"])
+
+header = create_payment_header(
+    signer=signer,
+    requirements=x402.get_gateway_option(),
+    resource=x402.resource,
+)
+second = httpx.get("http://localhost:8000/forecast", headers={"PAYMENT-SIGNATURE": header})
 ```
 
-## Documenting an API key
+Always pass `resource`. It is optional in the function signature, but Circle
+Gateway rejects a payload without it.
 
-```bash
-curl --request GET \
-  --url 'https://api.yourproduct.com/v1/posts' \
-  --header 'X-Api-Key: YOUR_API_KEY'
-```
+## Signed authorization lifetime
 
-## Declare the scheme in OpenAPI
-
-Add a security scheme to `openapi.yaml` and the generated endpoint pages will
-show the requirement — and the playground will prompt for the credential —
-automatically:
-
-```yaml
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-security:
-  - bearerAuth: []
-```
-
-<Tip>
-  Tell readers where to create and revoke credentials, how long they live, and
-  what happens when one expires. Those three answers prevent most
-  authentication support tickets.
-</Tip>
+The signed authorization is valid for `maxTimeoutSeconds` from the `402`
+response. Circle Gateway currently rejects authorizations shorter than 7
+days. circlekit `09828f3` defaults to 4 days, so set a longer window on the
+server as shown in the [Quickstart](/quickstart).

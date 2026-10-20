@@ -1,45 +1,64 @@
 ---
 title: Introduction
-description: Give readers a clear path from their first question to a result they can verify.
+description: What circlekit does, who it is for, and what you will build with these docs.
 mode: home
 ---
 
 <Hero
-  title="Build documentation around the reader"
-  subtitle="Start with a useful first result, organize what follows, and publish every format from one reviewable source."
-  primaryLabel="Get started"
+  title="Paid API requests for Python agents"
+  subtitle="Charge for an endpoint with x402 and let an agent pay for it in USDC through Circle Gateway."
+  primaryLabel="Run the quickstart"
   primaryHref="/quickstart"
-  secondaryLabel="Publish your docs"
-  secondaryHref="/guides/create-a-site"
+  secondaryLabel="Pay from an agent"
+  secondaryHref="/guides/pay-from-an-agent"
 />
 
-## Build the reader journey
+circlekit is a Python SDK for [x402](https://github.com/coinbase/x402), the HTTP
+payment protocol, with Circle Gateway as the payment backend. It lets you put a
+price on an API endpoint and lets a program, such as an AI agent, pay that price
+in USDC without a human in the loop.
 
-Begin with the task that brings most readers to your documentation, then make
-the next useful step obvious.
+The package is published from
+[`vyperlang/circle-titanoboa-sdk`](https://github.com/vyperlang/circle-titanoboa-sdk).
+You install `circle-titanoboa-sdk` and import `circlekit`.
 
-<CardGroup cols="2">
-  <Card title="Write your quickstart" icon="party-horn" href="/quickstart">
-    Turn prerequisites, setup, one realistic task, and verification into a short path.
-  </Card>
-  <Card title="Organize your navigation" icon="grid-round" href="/customization">
-    Group related tasks and references around how people use your product.
-  </Card>
-  <Card title="Document your API" icon="code-simple" href="/api">
-    Replace `openapi.yaml` to publish browsable endpoint docs with a live playground.
-  </Card>
-  <Card title="Learn the Thally workflow" icon="wrench" href="/guides/create-a-site">
-    Create, publish, and update sites from the Cloud dashboard, the CLI, or your AI tools.
-  </Card>
-</CardGroup>
+## How a payment works
 
-## Publish from one source
+x402 reuses the HTTP status code `402 Payment Required`:
 
-Thally turns the same reviewed content into HTML, search, agent discovery files,
-Markdown mirrors, and a read-only MCP surface — so people and AI tools read the
-same, current answer. Add only the locales your readers need.
+1. A client calls a paid endpoint with no payment.
+2. The server answers `402` and describes the price, the network, and who to pay
+   in a `PAYMENT-REQUIRED` header.
+3. The client signs a payment authorization and repeats the request with a
+   `PAYMENT-SIGNATURE` header.
+4. The server asks Circle Gateway to verify and settle the payment, then returns
+   the content with `200`.
 
-<Note type="info" title="Start with the product, not the template">
-  Replace this page with the questions, terminology, and workflows your readers
-  already use. Keep `docs.json` focused on the path between those tasks.
+Circle Gateway batches these payments, so the buyer does not pay gas per request.
+The buyer deposits USDC into Gateway once and spends from that balance.
+
+## Who these docs are for
+
+You are a Python developer who wants to:
+
+- charge per request for an API, for example one that AI agents call, or
+- write a client or agent that pays for x402-protected APIs.
+
+You need Python 3.10 or later and basic familiarity with FastAPI or another web
+framework. You do not need prior blockchain experience. Everything here runs on
+Arc Testnet with free test USDC.
+
+## What you will build
+
+- **[Quickstart](/quickstart)**: run a paid endpoint on your machine and read its
+  `402` response. No wallet or keys needed. About five minutes.
+- **[Pay from a Python agent](/guides/pay-from-an-agent)**: fund a test wallet,
+  deposit into Gateway, and complete a real payment against your endpoint.
+- **[API reference](/api/introduction)**: the request and response format of the
+  example endpoint.
+
+<Note>
+  These docs were tested against circlekit commit
+  [`09828f3`](https://github.com/vyperlang/circle-titanoboa-sdk/commit/09828f399731dd3250fb402f7f511046fb202355)
+  on Arc Testnet in October 2026. circlekit is alpha software.
 </Note>

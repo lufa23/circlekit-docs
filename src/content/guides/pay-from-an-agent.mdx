@@ -1,0 +1,205 @@
+---
+title: Pay from a Python agent
+description: Fund a test wallet, deposit USDC into Circle Gateway, and pay your x402 endpoint from Python.
+---
+
+This guide turns the [Quickstart](/quickstart) endpoint into a completed
+payment. You create a test wallet, fund it from Circle's faucet, deposit into
+Circle Gateway, and let a small Python agent pay $0.01 for `/forecast`.
+
+Everything runs on Arc Testnet. The USDC is free test currency.
+
+## Before you begin
+
+- The Quickstart finished, with `server.py` in your `weather-api` folder and the
+  virtual environment active.
+- A web browser for the faucet.
+
+<Warning>
+  Use a new wallet that only ever holds testnet funds. The scripts below read its
+  private key from an environment variable. Never commit it, and never reuse a key
+  that holds real funds.
+</Warning>
+
+<Steps>
+  <Step title="Create a test wallet">
+    ```bash
+    python -c "from eth_account import Account; a = Account.create(); print(a.address); print(a.key.hex())"
+    ```
+
+    The first line is the address, the second is the private key. Keep the key
+    for this terminal session only:
+
+    ```bash
+    export PRIVATE_KEY=<the second line>
+    ```
+  </Step>
+  <Step title="Get test USDC">
+    Open [faucet.circle.com](https://faucet.circle.com), choose **Arc Testnet**,
+    paste the address, and request USDC. The faucet sends 20 USDC and limits
+    requests per address, so one request is enough for this guide.
+
+    On Arc Testnet, USDC is also the gas token, so you do not need any other coin.
+  </Step>
+  <Step title="Check balances">
+    Save this as `balances.py`:
+
+    ```python title="balances.py"
+    import asyncio
+    import os
+
+    from circlekit import GatewayClient
+
+
+    async def main():
+        client = GatewayClient(chain="arcTestnet", private_key=os.environ["PRIVATE_KEY"])
+        balances = await client.get_balances()
+        print("address:", client.address)
+        print("wallet USDC:", balances.wallet.formatted)
+        print("gateway USDC available:", balances.gateway.formatted_available)
+        await client.close()
+
+
+    asyncio.run(main())
+    ```
+
+    ```bash
+    python balances.py
+    ```
+
+    After the faucet transfer you should see `wallet USDC: 20.000000` and
+    `gateway USDC available: 0.000000`. Payments spend the **Gateway** balance,
+    which is still empty.
+  </Step>
+  <Step title="Deposit into Circle Gateway">
+    Save this as `deposit.py`:
+
+    ```python title="deposit.py"
+    import asyncio
+    import os
+
+    from circlekit import GatewayClient
+
+
+    async def main():
+        client = GatewayClient(chain="arcTestnet", private_key=os.environ["PRIVATE_KEY"])
+        result = await client.deposit("1.0")
+        print("deposited:", result.formatted_amount, "USDC")
+        await client.close()
+
+
+    asyncio.run(main())
+    ```
+
+    ```bash
+    python deposit.py
+    ```
+
+    This sends two transactions, an approval and the deposit, and takes a few
+    seconds. You may see a `UserWarning` about `debug_traceTransaction`; it is
+    harmless here. Run `python balances.py` again: `gateway USDC available`
+    should now read `1.000000`.
+  </Step>
+  <Step title="Pay from an agent">
+    Make sure `uvicorn server:app --port 8000` from the Quickstart is running in
+    another terminal. Then save this as `agent.py`:
+
+    ```python title="agent.py"
+    import asyncio
+    import os
+
+    from circlekit import GatewayClient
+
+
+    async def main():
+        client = GatewayClient(chain="arcTestnet", private_key=os.environ["PRIVATE_KEY"])
+        result = await client.pay("http://localhost:8000/forecast")
+        print("status:", result.status)
+        print("data:", result.data)
+        print("paid:", result.formatted_amount, "USDC")
+        await client.close()
+
+
+    asyncio.run(main())
+    ```
+
+    ```bash
+    python agent.py
+    ```
+
+    Expected output:
+
+    ```text
+    status: 200
+    data: {'forecast': 'sunny', 'paid_by': '0xYourTestWallet'}
+    paid: 0.010000 USDC
+    ```
+
+    `pay()` made the unpaid request, read the `402`, signed an authorization, and
+    retried with the `PAYMENT-SIGNATURE` header. No gas was spent on the payment
+    itself. Run `python balances.py` once more and the Gateway balance reads
+    `0.990000`.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="pay() raises HTTPStatusError: Payment failed with status 402">
+    The client does not include the server's reason. Two common causes:
+
+    - **The Gateway balance is zero.** Check with `balances.py` and deposit first.
+      Money in the wallet is not enough; payments spend the Gateway balance.
+    - **The authorization window is too short.** circlekit `09828f3` signs
+      payment authorizations valid for 4 days. Circle Gateway currently rejects
+      anything shorter than 7 days with `authorization_validity_too_short`,
+      and the middleware reports this to the client only as
+      `{"error": "Invalid payment signature"}`. The fix is the line already in
+      the Quickstart's `server.py`:
+
+      ```python
+      circlekit.server.DEFAULT_MAX_TIMEOUT_SECONDS = 7 * 24 * 60 * 60 + 100
+      ```
+
+      The buyer signs for whatever window the seller's `402` asks for, so this
+      change on the server is enough.
+  </Accordion>
+  <Accordion title="The server returns Invalid payment signature">
+    The middleware hides Circle's specific reason behind this message. To see it,
+    call Gateway's verify step yourself with the same payload. In the cases
+    tested for these docs the real reason was `authorization_validity_too_short`
+    (see the previous item) or `self_transfer`, which means the buyer and
+    `SELLER_ADDRESS` are the same wallet. Use two different wallets.
+  </Accordion>
+  <Accordion title="Gateway verify failed (400): paymentPayload.resource.url: Required">
+    This appears when you build the payment header yourself with
+    `create_payment_header` and omit `resource`. Pass the resource from the
+    decoded `402`:
+
+    ```python
+    x402 = decode_payment_required(resp.headers["payment-required"])
+    header = create_payment_header(
+        signer=signer,
+        requirements=x402.get_gateway_option(),
+        resource=x402.resource,
+    )
+    ```
+
+    `GatewayClient.pay()` does this for you.
+  </Accordion>
+  <Accordion title="KeyError: 'SELLER_ADDRESS' when starting the server">
+    `server.py` reads the seller address from the environment. Run
+    `export SELLER_ADDRESS=0x...` in the same terminal before `uvicorn`.
+  </Accordion>
+  <Accordion title="pip install circlekit fails">
+    circlekit is not published on PyPI. Install from GitHub as shown in the
+    Quickstart, and note that the package name is `circle-titanoboa-sdk`.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+- Accept payments on more than one network with the `networks` argument of
+  `create_gateway_middleware`, described in the
+  [circlekit README](https://github.com/vyperlang/circle-titanoboa-sdk#multi-chain-support).
+- See the request and response format in the [API reference](/api/introduction).

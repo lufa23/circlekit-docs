@@ -160,13 +160,13 @@ const brandPresets: Record<BrandPresetKey, BrandConfig> = {
 const brandPreset: BrandPresetKey = 'primary'
 
 export const siteConfig: SiteConfig = {
-  name: 'Site',
+  name: 'circlekit',
   description:
-    'Documentation for Site.',
-  repoUrl: '',
+    'Charge for API requests and pay for them from Python agents with x402 and Circle Gateway.',
+  repoUrl: 'https://github.com/vyperlang/circle-titanoboa-sdk',
   links: [
     { label: 'Get started', href: '/quickstart' },
-    { label: 'Changelog', href: '/changelog' },
+    { label: 'GitHub', href: 'https://github.com/vyperlang/circle-titanoboa-sdk' },
   ],
   brand: brandPresets[brandPreset],
   brandPreset,

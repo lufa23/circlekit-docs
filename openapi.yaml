@@ -1,146 +1,140 @@
 openapi: 3.1.0
 info:
-  title: Sample Posts API
+  title: Weather API (circlekit example)
   version: 1.0.0
   description: >-
-    A working sample backed by the public JSONPlaceholder service, so every
-    request in this reference returns a live response you can inspect. Replace
-    this file with the OpenAPI specification for the API your readers use.
+    The example endpoint from the Quickstart: one route that charges $0.01 per
+    request with x402, using circlekit and Circle Gateway on Arc Testnet. Run
+    `server.py` from the Quickstart to serve it at http://localhost:8000.
 servers:
-  - url: https://jsonplaceholder.typicode.com
-    description: Live demo server
+  - url: http://localhost:8000
+    description: Your local server from the Quickstart
 tags:
-  - name: Posts
-    description: Create and read example posts.
-  - name: Users
-    description: Look up the example authors behind each post.
+  - name: Forecast
+    description: A paid endpoint protected by x402.
 paths:
-  /posts:
+  /forecast:
     get:
-      operationId: listPosts
-      tags: [Posts]
-      summary: List posts
-      description: Return every post. Real APIs would paginate a list this size.
-      responses:
-        '200':
-          description: All posts.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Post'
-    post:
-      operationId: createPost
-      tags: [Posts]
-      summary: Create a post
+      operationId: getForecast
+      tags: [Forecast]
+      summary: Get the forecast (paid)
       description: >-
-        Create a post and receive it back with a generated id. The demo server
-        accepts the write and echoes the result without storing it, so you can
-        try requests freely.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                  example: Hello from the API playground
-                body:
-                  type: string
-                  example: This request runs against a live server.
-                userId:
-                  type: integer
-                  example: 1
-              required: [title, body, userId]
-      responses:
-        '201':
-          description: The created post, including its generated id.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Post'
-  /posts/{id}:
-    get:
-      operationId: getPost
-      tags: [Posts]
-      summary: Get a post
-      description: Return one post by id. Ids 1–100 exist on the demo server.
+        Costs $0.01 in USDC. Without a valid `PAYMENT-SIGNATURE` header the
+        server answers `402` with the payment requirements. With a valid
+        signature it asks Circle Gateway to verify and settle the payment, then
+        answers `200`.
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: The post id.
+        - name: PAYMENT-SIGNATURE
+          in: header
+          required: false
+          description: >-
+            Base64-encoded x402 payment payload signed by the buyer. Build it
+            with `GatewayClient.pay()` or `circlekit.x402.create_payment_header`.
           schema:
-            type: integer
-            minimum: 1
-            example: 1
+            type: string
       responses:
         '200':
-          description: The requested post.
+          description: Payment settled. The body is the paid content.
+          headers:
+            PAYMENT-RESPONSE:
+              description: Base64-encoded settlement receipt.
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Post'
-        '404':
-          description: No post has this id.
-  /users/{id}:
-    get:
-      operationId: getUser
-      tags: [Users]
-      summary: Get a user
-      description: Return the profile of an example author. Ids 1–10 exist.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: The user id.
-          schema:
-            type: integer
-            minimum: 1
-            example: 1
-      responses:
-        '200':
-          description: The requested user.
+                type: object
+                properties:
+                  forecast:
+                    type: string
+                    example: sunny
+                  paid_by:
+                    type: string
+                    description: The buyer's wallet address.
+                    example: '0x1111111111111111111111111111111111111111'
+        '402':
+          description: >-
+            Payment required, or the payment was rejected. With no payment the
+            body lists the accepted payment options. With a rejected payment
+            the body has an `error` field instead.
+          headers:
+            PAYMENT-REQUIRED:
+              description: >-
+                Base64-encoded copy of the payment requirements. Present when no
+                payment was sent. Decode it with
+                `circlekit.x402.decode_payment_required`.
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          description: No user has this id.
+                oneOf:
+                  - $ref: '#/components/schemas/PaymentRequired'
+                  - $ref: '#/components/schemas/PaymentError'
 components:
   schemas:
-    Post:
+    PaymentRequired:
       type: object
       properties:
-        id:
+        x402Version:
           type: integer
-          example: 1
-        userId:
-          type: integer
-          example: 1
-        title:
-          type: string
-          example: Hello from the API playground
-        body:
-          type: string
-          example: This request runs against a live server.
-      required: [id, userId, title, body]
-    User:
+          example: 2
+        resource:
+          type: object
+          properties:
+            url:
+              type: string
+              example: /forecast
+            description:
+              type: string
+              example: Weather API
+            mimeType:
+              type: string
+              example: application/json
+        accepts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentOption'
+    PaymentOption:
       type: object
       properties:
-        id:
+        scheme:
+          type: string
+          example: exact
+        network:
+          type: string
+          description: CAIP-2 chain ID. `eip155:5042002` is Arc Testnet.
+          example: eip155:5042002
+        asset:
+          type: string
+          description: USDC token address on that network.
+          example: '0x3600000000000000000000000000000000000000'
+        amount:
+          type: string
+          description: Price in USDC base units (6 decimals). `10000` is $0.01.
+          example: '10000'
+        payTo:
+          type: string
+          description: The seller's wallet (`SELLER_ADDRESS`).
+        maxTimeoutSeconds:
           type: integer
-          example: 1
-        name:
+          description: How long the buyer's signed authorization stays valid.
+          example: 604900
+        extra:
+          type: object
+          properties:
+            name:
+              type: string
+              example: GatewayWalletBatched
+            version:
+              type: string
+              example: '1'
+            verifyingContract:
+              type: string
+              example: '0x0077777d7EBA4688BDeF3E311b846F25870A19B9'
+    PaymentError:
+      type: object
+      properties:
+        error:
           type: string
-          example: Leanne Graham
-        username:
-          type: string
-          example: Bret
-        email:
-          type: string
-          example: Sincere@april.biz
-      required: [id, name, username, email]
+          example: Invalid payment signature

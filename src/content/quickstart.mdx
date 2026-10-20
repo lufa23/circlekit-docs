@@ -1,47 +1,162 @@
 ---
 title: Quickstart
-description: Guide a new reader through one useful workflow and show them how to verify it.
+description: Run a paid API endpoint locally and read the 402 response a paying client receives.
 ---
 
-A strong quickstart produces one meaningful result. Replace the placeholders
-below with the shortest supported path for your product.
+In about five minutes you will run a FastAPI endpoint that charges $0.01 per
+request, call it, and decode the payment requirements it sends back. You need no
+wallet, keys, or Circle account for this page.
 
 ## Before you begin
 
-List only the requirements needed for this workflow:
-
-- An account or credential, when required
-- A supported runtime, device, browser, or operating system
-- Permission to create or change the resource used in the example
+- Python 3.10 or later
+- `git` (circlekit is installed from GitHub; it is not on PyPI)
+- `curl`
 
 <Steps>
-  <Step title="Install the required tool">
-    Give readers one recommended installation command.
+  <Step title="Install circlekit">
+    Create a project folder and a virtual environment, then install circlekit with
+    its example dependencies (FastAPI and Uvicorn):
 
     ```bash
-    npm install your-package
+    mkdir weather-api && cd weather-api
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install "circle-titanoboa-sdk[examples] @ git+https://github.com/vyperlang/circle-titanoboa-sdk@09828f399731dd3250fb402f7f511046fb202355"
     ```
+
+    The install takes about a minute. The package name is `circle-titanoboa-sdk`,
+    but you import it as `circlekit`.
   </Step>
-  <Step title="Add the minimum configuration">
-    Include only the values needed for the first successful run.
+  <Step title="Write a paid endpoint">
+    Save this as `server.py`:
+
+    ```python title="server.py"
+    import os
+
+    from fastapi import FastAPI, Request
+    from fastapi.responses import JSONResponse
+    import circlekit.server
+    from circlekit import create_gateway_middleware
+
+    # Circle Gateway requires payment authorizations valid for at least 7 days;
+    # circlekit 09828f3 defaults to 4 days. Use Circle's own value: 7 days plus a
+    # 100-second buffer. See Troubleshooting in the guide.
+    circlekit.server.DEFAULT_MAX_TIMEOUT_SECONDS = 7 * 24 * 60 * 60 + 100
+
+    app = FastAPI(title="Weather API")
+
+    gateway = create_gateway_middleware(
+        seller_address=os.environ["SELLER_ADDRESS"],
+        chain="arcTestnet",
+        description="Weather API",
+    )
+
+
+    @app.get("/forecast")
+    async def forecast(request: Request):
+        result = await gateway.process_request(
+            payment_header=request.headers.get("PAYMENT-SIGNATURE"),
+            path=request.url.path,
+            price="$0.01",
+        )
+
+        # No payment, or a rejected one: return the 402 body and headers.
+        if isinstance(result, dict):
+            resp = JSONResponse(result["body"], status_code=result["status"])
+            for k, v in result.get("headers", {}).items():
+                resp.headers[k] = v
+            return resp
+
+        # Paid: return the content plus the settlement receipt header.
+        resp = JSONResponse({"forecast": "sunny", "paid_by": result.payer})
+        for k, v in result.response_headers.items():
+            resp.headers[k] = v
+        return resp
+    ```
+
+    `process_request` does the whole x402 exchange: it returns a `402` response
+    when there is no valid payment, and payment details once Circle Gateway has
+    settled it.
+  </Step>
+  <Step title="Start the server">
+    `SELLER_ADDRESS` is the wallet that receives payments. Any valid address works
+    for this page. Use one you control if you plan to continue to the guide, and
+    make it a different wallet from the one that will pay.
 
     ```bash
-    your-cli init
+    export SELLER_ADDRESS=0xYourSellerAddress
+    uvicorn server:app --port 8000
     ```
+
+    You should see `Uvicorn running on http://127.0.0.1:8000`.
   </Step>
-  <Step title="Complete the first task">
-    Use a realistic example that produces an observable result.
+  <Step title="Call the endpoint without paying">
+    In a second terminal:
 
     ```bash
-    your-cli start
+    curl -i http://localhost:8000/forecast
     ```
+
+    You get `HTTP/1.1 402 Payment Required`, a long base64 `payment-required`
+    header, and a JSON body like this (reformatted):
+
+    ```json
+    {
+      "x402Version": 2,
+      "resource": {"url": "/forecast", "description": "Weather API", "mimeType": "application/json"},
+      "accepts": [{
+        "scheme": "exact",
+        "network": "eip155:5042002",
+        "asset": "0x3600000000000000000000000000000000000000",
+        "amount": "10000",
+        "payTo": "0xYourSellerAddress",
+        "maxTimeoutSeconds": 604900,
+        "extra": {"name": "GatewayWalletBatched", "version": "1", "verifyingContract": "0x0077777d7EBA4688BDeF3E311b846F25870A19B9"}
+      }]
+    }
+    ```
+
+    `eip155:5042002` is Arc Testnet. `amount` is in USDC base units with 6
+    decimals, so `10000` is $0.01.
   </Step>
-  <Step title="Verify the result">
-    State exactly what the reader should see and how to recover when it does not appear.
+  <Step title="Decode it the way a client does">
+    Clients read the `payment-required` header, not the body. In the second
+    terminal, activate the virtual environment (`source .venv/bin/activate`),
+    save this as `decode.py`, and run it:
+
+    ```python title="decode.py"
+    import httpx
+    from circlekit.x402 import decode_payment_required
+
+    resp = httpx.get("http://localhost:8000/forecast")
+    print("status:", resp.status_code)
+
+    x402 = decode_payment_required(resp.headers["payment-required"])
+    option = x402.get_gateway_option()
+    print("network:", option.network)
+    print("price:", option.amount_formatted, "USDC")
+    print("pay to:", option.pay_to)
+    ```
+
+    ```bash
+    python decode.py
+    ```
+
+    Expected output:
+
+    ```text
+    status: 402
+    network: eip155:5042002
+    price: 0.010000 USDC
+    pay to: 0xYourSellerAddress
+    ```
   </Step>
 </Steps>
 
-## Choose the next task
+You now have a priced endpoint and a client that understands its price.
 
-Link to the guide that naturally follows this result. Avoid ending the reader’s
-journey with a generic list of every feature.
+## Next step
+
+Pay for the endpoint for real from a Python agent:
+[Pay from a Python agent](/guides/pay-from-an-agent).
