@@ -23,7 +23,8 @@ cd circlekit-docs
 ```
 
 `--yes` accepts the default answers and `--install` installs the dependencies. It took
-about a minute for me. The result is a Next.js project, but you only edit four things:
+about a minute for me. The result is a Next.js project, but the site itself lives in four
+places (step 5 adds a small `tools/` folder for checks):
 
 | Path | What it holds |
 |------|---------------|
@@ -85,7 +86,9 @@ It reports two broken links in the homepage, `src/content/introduction.mdx`: the
 blocks. Three more links point at removed pages, and the checker does not report them:
 
 - `secondaryHref="/guides/create-a-site"` on the `<Hero>` near the top of the homepage.
-  Change it to `/quickstart`, and change `secondaryLabel` to match.
+  Point it at a page you keep and change `secondaryLabel` to match, for example
+  `/api/introduction` and "API reference". The homepage text is still the starter's,
+  so rewrite it for your product while you are there.
 - The `Changelog` entry in the `links` list of `src/data/site.ts`, which becomes the
   footer link on every page. Delete that line.
 - A link to `/api/authentication` inside a `<Note>` in `src/content/api/introduction.mdx`.
@@ -290,7 +293,8 @@ if __name__ == "__main__":
 ```
 
 Then a script that installs circlekit with the exact command from the page, starts the
-server, and runs the client. Save it as `tools/run_quickstart.sh`:
+server, and runs the client. It works in `../docsrun`, next to the project, so the
+extracted files never mix with your site. Save it as `tools/run_quickstart.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -316,7 +320,8 @@ Run it:
 bash tools/run_quickstart.sh
 ```
 
-It takes about a minute, mostly the install. When it finishes you should see:
+It takes about a minute, mostly the install. When it finishes you should see these lines
+(pip may also print a notice about a newer pip version):
 
 ```text
 extracted server.py from quickstart.mdx
@@ -390,8 +395,9 @@ sed -i 's/^initOpenNextCloudflareForDev()/\/\/ &/' next.config.ts
 npm run build && npm start
 ```
 
-Leave the line in the copy you publish. After each content change, go back to the project
-directory and run all three lines again: the `rsync` copies the original `next.config.ts`
+Leave the line in the copy you publish. After each content change, stop the running
+`npm start` (Ctrl+C, it holds port 3040), go back to the project directory and run all
+three lines again: the `rsync` copies the original `next.config.ts`
 back, so the `sed` has to follow it. Use `npm run build`, not `npx next build`: its
 `prebuild` script regenerates the compiled pages, and without it the server shows the old
 ones. `npm start` serves on port 3040.
