@@ -18,16 +18,16 @@ http://localhost:8000
 ```
 
 Start it with `uvicorn server:app --port 8000` as described in the Quickstart.
-The reference pages describe the server; they cannot reach a server that is not
-running.
+The reference pages describe the server. Their request samples point at
+`localhost:8000`, so run them from your own terminal.
 
-## The two responses
+## Responses
 
 | Request | Response |
 |---------|----------|
 | No `PAYMENT-SIGNATURE` header | `402` with the payment options in the body and in the `PAYMENT-REQUIRED` header |
 | Valid, funded `PAYMENT-SIGNATURE` | `200` with the content and a `PAYMENT-RESPONSE` receipt header |
-| Rejected `PAYMENT-SIGNATURE` | `402` with `{"error": "..."}` |
+| Rejected `PAYMENT-SIGNATURE` | `402` with an `error` message, plus Gateway's `reason` when Gateway rejected it |
 
 See [Payment headers](/api/authentication) for how the headers are built and
 read.

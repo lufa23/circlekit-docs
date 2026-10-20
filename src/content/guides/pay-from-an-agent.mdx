@@ -13,6 +13,10 @@ Everything runs on Arc Testnet. The USDC is free test currency.
 
 - The Quickstart finished, with `server.py` in your `weather-api` folder and the
   virtual environment active.
+- The server running with a real `SELLER_ADDRESS` that is not the wallet you create
+  below. If you started it with the placeholder `0xYourSellerAddress`, stop it and
+  start it again with an address you control, for example one from running the
+  command in step 1 a second time.
 - A web browser for the faucet.
 
 <Warning>
@@ -36,8 +40,8 @@ Everything runs on Arc Testnet. The USDC is free test currency.
   </Step>
   <Step title="Get test USDC">
     Open [faucet.circle.com](https://faucet.circle.com), choose **Arc Testnet**,
-    paste the address, and request USDC. The faucet sends 20 USDC and limits
-    requests per address, so one request is enough for this guide.
+    paste the address, and request USDC. One request gives enough test USDC for
+    this guide.
 
     On Arc Testnet, USDC is also the gas token, so you do not need any other coin.
   </Step>
@@ -146,8 +150,8 @@ Everything runs on Arc Testnet. The USDC is free test currency.
 
 <AccordionGroup>
   <Accordion title="pay() raises HTTPStatusError: Payment failed with status 402">
-    The end of the message is the seller's response, which includes Circle
-    Gateway's reason:
+    The end of the message is the seller's response. When Circle Gateway
+    rejected the payment, it includes Gateway's reason:
 
     ```text
     httpx.HTTPStatusError: Payment failed with status 402: {"error":"Payment verification failed","reason":"self_transfer"}
@@ -159,9 +163,9 @@ Everything runs on Arc Testnet. The USDC is free test currency.
       Money in the wallet is not enough; payments spend the Gateway balance.
     - **`self_transfer`.** The buyer and `SELLER_ADDRESS` are the same wallet.
       Use two different wallets.
-    - **`authorization_validity_too_short`.** Gateway rejects authorizations
-      valid for less than 7 days. circlekit commits before `1a05260` signed for
-      4 days. Install the commit pinned in the Quickstart.
+    - **`authorization_validity_too_short`.** In tests, Gateway rejected 4- and
+      6-day authorizations and accepted 7 days. circlekit up to
+      `09828f3` signed for 4 days. Install the commit pinned in the Quickstart.
   </Accordion>
   <Accordion title="Gateway verify failed (400): paymentPayload.resource.url: Required">
     This appears when you build the payment header yourself with

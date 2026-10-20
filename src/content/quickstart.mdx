@@ -116,8 +116,9 @@ wallet, keys, or Circle account for this page.
   </Step>
   <Step title="Decode it the way a client does">
     Clients read the `payment-required` header, not the body. In the second
-    terminal, activate the virtual environment (`source .venv/bin/activate`),
-    save this as `decode.py`, and run it:
+    terminal, go to the project and activate the virtual environment
+    (`cd weather-api && source .venv/bin/activate`), save this as `decode.py`,
+    and run it:
 
     ```python title="decode.py"
     import httpx

@@ -47,6 +47,6 @@ Gateway rejects a payload without it.
 ## Signed authorization lifetime
 
 The signed authorization is valid for `maxTimeoutSeconds` from the `402`
-response. Circle Gateway currently rejects authorizations shorter than 7
-days. circlekit defaults to 7 days plus 100 seconds (`604900`), and the client
+response. In tests, Circle Gateway rejected 4- and 6-day authorizations
+and accepted 7 days. circlekit defaults to 7 days plus 100 seconds (`604900`), and the client
 signs for at least that long even if a seller asks for less.
