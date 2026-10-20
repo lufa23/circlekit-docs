@@ -46,7 +46,8 @@
         {
           "group": "About these docs",
           "pages": [
-            "articles/docs-you-can-run"
+            "articles/docs-you-can-run",
+            "changelog"
           ]
         }
       ]
@@ -69,5 +70,51 @@
   ],
   "ai": {
     "chat": true
+  },
+  "readiness": {
+    "topK": 2,
+    "goldenQuestions": [
+      {
+        "question": "How do I install circlekit?",
+        "expect": [
+          "/quickstart"
+        ]
+      },
+      {
+        "question": "Where do I get test USDC?",
+        "expect": [
+          "/guides/pay-from-an-agent"
+        ]
+      },
+      {
+        "question": "Do I need ETH for gas on Arc Testnet?",
+        "expect": [
+          "/guides/pay-from-an-agent"
+        ]
+      },
+      {
+        "question": "My agent still gets a 402 after paying",
+        "expect": [
+          "/guides/pay-from-an-agent"
+        ]
+      },
+      {
+        "question": "payment rejected with authorization_validity_too_short",
+        "expect": [
+          "/guides/pay-from-an-agent"
+        ]
+      },
+      {
+        "question": "What does the 402 response body contain?",
+        "expect": [
+          "/api/introduction"
+        ]
+      }
+    ]
+  },
+  "api": {
+    "playground": {
+      "display": "simple"
+    }
   }
 }

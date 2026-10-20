@@ -1,6 +1,7 @@
 ---
 title: Pay from a Python agent
 description: Fund a test wallet, deposit USDC into Circle Gateway, and pay your x402 endpoint from Python.
+lastVerified: 2026-10-20
 ---
 
 This guide turns the [Quickstart](/quickstart) endpoint into a completed
@@ -31,11 +32,14 @@ Everything runs on Arc Testnet. The USDC is free test currency.
     python -c "from eth_account import Account; a = Account.create(); print(a.address); print(a.key.hex())"
     ```
 
-    The first line is the address, the second is the private key. Keep the key
-    for this terminal session only:
+    The first line is the address, the second is the private key (64 hex
+    characters; some versions add a `0x` prefix, and circlekit accepts either). Keep the key
+    for this terminal session only. Run this, paste the second line, and press
+    Enter. Nothing is shown while you paste, and the key stays out of your shell
+    history:
 
     ```bash
-    export PRIVATE_KEY=<the second line>
+    read -rs PRIVATE_KEY && export PRIVATE_KEY
     ```
   </Step>
   <Step title="Get test USDC">

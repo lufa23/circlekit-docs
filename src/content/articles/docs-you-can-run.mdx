@@ -371,7 +371,7 @@ middleware replaced it with a generic "Invalid payment signature", and the buyer
 message left out the response body.
 
 What changed was outside the repository. To pay, the buyer signs an authorization that
-lets Gateway move its USDC until an expiry time. circlekit set that expiry 4 days ahead,
+lets Gateway move its USDC until an expiry time. circlekit set that expiry 4 days ahead by default,
 and Circle Gateway required at least 7.
 
 I confirmed it in two ways. First, I sent authorizations with different lifetimes to

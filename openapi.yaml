@@ -23,6 +23,25 @@ paths:
         server answers `402` with the payment requirements. With a valid
         signature it asks Circle Gateway to verify and settle the payment, then
         answers `200`.
+      x-codeSamples:
+        - label: circlekit (Python)
+          source: |
+            import asyncio
+            import os
+
+            from circlekit import GatewayClient
+
+
+            async def main():
+                client = GatewayClient(chain="arcTestnet", private_key=os.environ["PRIVATE_KEY"])
+                result = await client.pay("http://localhost:8000/forecast")
+                print("status:", result.status)
+                print("data:", result.data)
+                print("paid:", result.formatted_amount, "USDC")
+                await client.close()
+
+
+            asyncio.run(main())
       parameters:
         - name: PAYMENT-SIGNATURE
           in: header
@@ -42,6 +61,9 @@ paths:
                 type: string
           content:
             application/json:
+              example:
+                forecast: sunny
+                paid_by: '0xd5Ba7b8d97924e47782044a7A7aF8d66fa4a9cA0'
               schema:
                 type: object
                 properties:
@@ -67,6 +89,23 @@ paths:
                 type: string
           content:
             application/json:
+              example:
+                x402Version: 2
+                resource:
+                  url: /forecast
+                  description: Weather API
+                  mimeType: application/json
+                accepts:
+                  - scheme: exact
+                    network: eip155:5042002
+                    asset: '0x3600000000000000000000000000000000000000'
+                    amount: '10000'
+                    payTo: '0xYourSellerAddress'
+                    maxTimeoutSeconds: 604900
+                    extra:
+                      name: GatewayWalletBatched
+                      version: '1'
+                      verifyingContract: '0x0077777d7EBA4688BDeF3E311b846F25870A19B9'
               schema:
                 oneOf:
                   - $ref: '#/components/schemas/PaymentRequired'

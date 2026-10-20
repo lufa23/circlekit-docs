@@ -1,0 +1,17 @@
+---
+title: Changelog
+description: Changes to these docs and to the circlekit version they are tested against.
+---
+
+<Update date="2026-10-20" title="First version of the docs" tags={["docs", "circlekit"]}>
+  A [Quickstart](/quickstart) that runs a paid endpoint with no wallet, a
+  [guide](/guides/pay-from-an-agent) that makes a test payment on Arc Testnet,
+  and an [API reference](/api/introduction) for the example endpoint.
+
+  The pages are tested against circlekit commit `1a05260`, the merge of
+  [vyperlang/circle-titanoboa-sdk#5](https://github.com/vyperlang/circle-titanoboa-sdk/pull/5).
+  In tests, Gateway rejected 4- and 6-day payment authorizations and accepted
+  7 days, and
+  circlekit up to `09828f3` signed for 4 days by default. If you installed an
+  older commit, reinstall with the command in the [Quickstart](/quickstart).
+</Update>

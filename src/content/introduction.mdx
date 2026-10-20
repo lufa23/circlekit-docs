@@ -35,6 +35,20 @@ x402 reuses the HTTP status code `402 Payment Required`:
 4. The server asks Circle Gateway to verify and settle the payment, then returns
    the content with `200`.
 
+```mermaid
+sequenceDiagram
+    participant B as Buyer (client or agent)
+    participant S as Seller (your API)
+    participant G as Circle Gateway
+    B->>S: GET /forecast
+    S-->>B: 402 with PAYMENT-REQUIRED (price, network, payTo)
+    Note over B: Signs a USDC payment authorization
+    B->>S: GET /forecast with PAYMENT-SIGNATURE
+    S->>G: Verify and settle the payment
+    G-->>S: Settlement accepted
+    S-->>B: 200 with the content and PAYMENT-RESPONSE
+```
+
 Circle Gateway batches these payments, so the buyer does not pay gas per request.
 The buyer deposits USDC into Gateway once and spends from that balance.
 
@@ -51,12 +65,19 @@ Arc Testnet with free test USDC.
 
 ## What you will build
 
-- **[Quickstart](/quickstart)**: run a paid endpoint on your machine and read its
-  `402` response. No wallet or keys needed. About five minutes.
-- **[Pay from a Python agent](/guides/pay-from-an-agent)**: fund a test wallet,
-  deposit into Gateway, and complete a real payment against your endpoint.
-- **[API reference](/api/introduction)**: the request and response format of the
-  example endpoint.
+<CardGroup cols="3">
+  <Card title="Quickstart" icon="rocket-launch" href="/quickstart">
+    Run a paid endpoint on your machine and read its `402` response. No wallet or
+    keys needed. About five minutes.
+  </Card>
+  <Card title="Pay from a Python agent" icon="wallet" href="/guides/pay-from-an-agent">
+    Fund a test wallet, deposit into Gateway, and complete a real payment against
+    your endpoint.
+  </Card>
+  <Card title="API reference" icon="code-simple" href="/api/introduction">
+    The request and response format of the example endpoint.
+  </Card>
+</CardGroup>
 
 <Note>
   These docs were tested against circlekit commit
