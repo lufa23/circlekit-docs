@@ -1,30 +1,43 @@
 ---
 title: "Docs you can run: building the circlekit docs with Thally"
 navTitle: How these docs were built
-description: How this site was built with Thally, and how running every code block on its pages found a real payment bug.
+description: How the circlekit docs website was built with Thally, and how running the code on its pages found a real payment bug.
 ---
 
-circlekit is a Python SDK for x402 payments through Circle Gateway. I co-wrote it, and
-it had a README but no docs site. This article shows how I built one with Thally, and
-how I set it up so that every file the docs ask the reader to save is code I have run.
-That second part found a bug: with its default settings, every payment I tried through the
-SDK failed.
+circlekit is a Python SDK for x402 payments through Circle Gateway. I ported it from TypeScript to Python, and until now it had no docs beyond a README and a few examples. This article shows how I built its docs site with [Thally](https://www.thally.io), a framework for documentation sites, and how running the code on its pages helped me spot a bug: payments made with circlekit's default settings were rejected by Circle Gateway.
 
-The result is this site. Its source is at
-[github.com/lufa23/circlekit-docs](https://github.com/lufa23/circlekit-docs). You can
-follow the steps below in an empty directory. You need Node.js (I used 22), Python 3.10 or
-later, `git`, `curl`, and `rsync` for step 7. No wallet or keys are needed.
+If these names are new to you, here is what they mean:
+
+- **[x402](https://www.x402.org)** is a protocol that lets a program pay for an API call on its own. It reuses the HTTP status `402 Payment Required`: the server answers `402` with a price, and the client signs a payment and sends the request again. The client that pays is the buyer; the API that gets paid is the seller.
+- **[USDC](https://www.circle.com/usdc)** is a stablecoin: a digital token on a blockchain whose value is tied to the US dollar (Circle, which issues it, says it can be redeemed 1:1 for dollars). Because it lives on a blockchain, a program can pay with it directly, with no card or bank account.
+- **[Circle Gateway](https://developers.circle.com/gateway-nanopayments)** is Circle's USDC payment service. The buyer deposits USDC into it once, and Gateway checks each payment and pays sellers in batches instead of one blockchain transaction per payment.
+- A **testnet** is a test copy of a blockchain, where tokens have no real value and you get them free from a [faucet](https://faucet.circle.com). circlekit's examples run on Arc Testnet, the testnet of [Arc](https://docs.arc.io), Circle's blockchain.
+- A **wallet** is an address plus a private key. The buyer signs payments with its key, and the seller receives them at its address.
+
+The SDK's source is at [vyperlang/circle-titanoboa-sdk](https://github.com/vyperlang/circle-titanoboa-sdk): the package is named `circle-titanoboa-sdk`, is installed from GitHub, and is imported as `circlekit`.
+
+The source code for the docs website can be found at
+[github.com/lufa23/circlekit-docs](https://github.com/lufa23/circlekit-docs).
+To build a docs site like it with Thally, follow the steps below.
+
+## What you need
+
+Node.js (I used 22), Python 3.10 or later, `git` and `curl`, plus `rsync` for step 7.
+No wallet or keys are needed.
 
 ## 1. Scaffold the site
+
+First, scaffold the site:
 
 ```bash
 npx --yes create-thally-docs@latest circlekit-docs --yes --install
 cd circlekit-docs
 ```
 
-`--yes` accepts the default answers and `--install` installs the dependencies. It took
-about a minute for me. The result is a Next.js project, but the site itself lives in four
-places (step 5 adds a small `tools/` folder for checks):
+The `--yes` flag accepts the default answers and `--install` installs the dependencies.
+After about a minute, you get a Next.js project.
+
+You only need to edit four places (step 5 adds a small `tools/` folder for checks):
 
 | Path | What it holds |
 |------|---------------|
@@ -33,29 +46,28 @@ places (step 5 adds a small `tools/` folder for checks):
 | `src/data/site.ts` | product name, header and footer links, and colors |
 | `openapi.yaml` | the API description behind the API reference |
 
-Everything else belongs to the Thally runtime. `starter-release.json` lists which files
-the framework updates for you, so you know which ones not to edit.
+Most of the rest belongs to the Thally runtime. `starter-release.json` lists which files
+the framework updates for you, so leave those alone.
 
 ## 2. Plan the pages around what the reader does
 
-The circlekit reader is a Python developer who wants to charge for an API, or wants an
-agent to pay for one. So the site has three parts:
+Developers interested in circlekit are mainly Python developers who want to charge for an API, or want their agent to pay for one. For this reason, the docs site has three parts:
 
-- a **Quickstart** that needs no wallet: run a paid endpoint and read its `402` reply,
-- a **guide** that does a real payment on testnet,
+- a **Quickstart**, where no wallet is needed. This lowers the onboarding friction: you run a paid endpoint and read its `402` reply,
+- a **guide** that makes a real payment with test money on Arc Testnet,
 - an **API reference** for the example endpoint.
 
-The starter comes with sample pages. Remove the ones you will not use. The starter's API
-overview suggests rewriting its Authentication page rather than deleting it; on the real
-site I rewrote it, but this walkthrough keeps the API tab to one page, so it goes too:
+The project that `create-thally-docs` generates (Thally calls it the starter) comes with
+sample pages. Remove the ones you will not use. The starter's API overview suggests
+rewriting its Authentication page rather than deleting it. On the circlekit docs website I rewrote it, but
+for this walkthrough I wanted the API tab to have one page, so I removed it:
 
 ```bash
 rm -r src/content/guides src/content/components.mdx src/content/customization.mdx \
   src/content/changelog.mdx src/content/api/authentication.mdx
 ```
 
-Then open `docs.json` and replace its `tabs` array with the navigation for the pages that
-are left. Leave the other keys as they are:
+You can then open `docs.json` and replace its `tabs` array with the navigation for the remaining pages. You can leave the other keys as they are:
 
 ```json
 "tabs": [
@@ -71,11 +83,9 @@ are left. Leave the other keys as they are:
 ]
 ```
 
-The `api.source` line is all it takes to get an API reference: Thally reads
-`openapi.yaml` and adds a page per operation to that tab. For the spec in step 4, that
-page is `/api/default/forecast/get`.
+To get an API reference, you only need the `api.source` line. Thally reads `openapi.yaml` and adds a page per operation to that tab. Once you replace the spec in step 4, that page will be `/api/default/forecast/get`.
 
-Some of what is left still links to the pages you just removed. Run the checker:
+Because some of what is left still links to the pages you just removed, you need to run the checker:
 
 ```bash
 npx --yes @thallylabs/cli@latest check
@@ -101,7 +111,7 @@ navTitle: Overview
 description: The request and response format of the x402-protected example endpoint.
 ---
 
-This reference documents the Weather API from the [Quickstart](/quickstart): one
+This reference documents the Weather API from the [Quickstart](/quickstart). This is one
 endpoint, `GET /forecast`, priced at $0.01 per request.
 
 | Request | Response |
@@ -111,20 +121,20 @@ endpoint, `GET /forecast`, priced at $0.01 per request.
 ```
 
 Run the checker again; it should print `No issues found.` Because it missed three links,
-I also check the built site's links in step 7.
+step 7 also checks the built site's links.
 
 ## 3. Write the Quickstart with named code blocks
 
 Thally pages are MDX with built-in components such as `<Steps>`, `<Note>` and
-`<Accordion>`. The one habit that matters here is giving every code block the reader
-saves to a file a title, the file name:
+`<Accordion>`. On top of those, one habit matters most here: give every code block the
+reader saves to a file a title, which is the file name:
 
 ````text
 ```python title="server.py"
 ````
 
 The title shows above the block on the site, and in step 5 a short script uses it to
-pull the code back out and run it.
+pull the code out and run it.
 
 Replace `src/content/quickstart.mdx` with this shortened version of the circlekit
 Quickstart:
@@ -211,13 +221,18 @@ requirements it sends back. No wallet or keys needed.
 </Steps>
 ````
 
-Two things in that page are deliberate. The install line pins circlekit to a full commit
-SHA, so the page describes one exact version of the code. And the expected output is
-something you can compare, not a description of what "should" happen.
+Two things to notice here. First, the install line pins circlekit to a full commit
+SHA, so every reader installs the exact version of the code the page was tested with.
+Second, the page shows the expected output, so you can compare what you get with what
+you should get.
+
+The page asks for a `SELLER_ADDRESS`, the wallet that would receive the payment. Nothing
+is paid in the Quickstart, so any valid address works; the script in step 5 uses
+`0x000000000000000000000000000000000000dEaD`.
 
 ## 4. Describe the endpoint in OpenAPI
 
-Replace `openapi.yaml` with a description of the one endpoint:
+You then replace `openapi.yaml` with a description of the one endpoint:
 
 ```yaml
 openapi: 3.1.0
@@ -247,21 +262,22 @@ paths:
           description: Payment required, or the payment was rejected.
 ```
 
-Now validate the project:
+And validate the project:
 
 ```bash
 npx --yes @thallylabs/cli@latest check
 ```
 
-It checks navigation targets, frontmatter, and most links (step 2 lists the ones it
+This checks frontmatter and most links (step 2 lists the ones it
 missed). You should see `No issues found.`
 
 ## 5. Run the code blocks
 
-`thally check` knows the pages are well formed. It cannot know the Python in them
-works. For that, I wrote a short script that finds every code block with a
+`thally check` (the checker you ran in steps 2 and 4) tells you the pages are well formed.
+It cannot tell you if the Python in
+them works. For that, I wrote a short script that finds every code block with a
 `title="..."`, writes it to a file of that name, and refuses to continue if two blocks
-with the same title disagree. Save it as `tools/extract_blocks.py`:
+with the same title disagree. You can save it as `tools/extract_blocks.py`:
 
 ```python
 """Write every code block that has title="name" in the MDX pages to WORKDIR/name."""
@@ -292,9 +308,9 @@ if __name__ == "__main__":
     main(*sys.argv[1:3])
 ```
 
-Then a script that installs circlekit with the exact command from the page, starts the
-server, and runs the client. It works in `../docsrun`, next to the project, so the
-extracted files never mix with your site. Save it as `tools/run_quickstart.sh`:
+You also need a script that installs circlekit with the exact command from the page,
+starts the server, and runs the client. The script works in `../docsrun`, a folder next
+to the project, so the extracted files never mix with your site. Save it as `tools/run_quickstart.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -320,7 +336,7 @@ Run it:
 bash tools/run_quickstart.sh
 ```
 
-It takes about a minute, mostly the install. When it finishes you should see these lines
+The installation takes around one minute. When it finishes you should see these lines
 (pip may also print a notice about a newer pip version):
 
 ```text
@@ -332,15 +348,17 @@ price: 0.010000 USDC
 pay to: 0x000000000000000000000000000000000000dEaD
 ```
 
-On the real site the same idea covers the payment guide too. Its runner also takes a
-testnet private key from a file, deposits test USDC into Gateway, and pays the endpoint,
-so the guide's expected output (`status: 200`, a Gateway balance that drops by 0.01)
-comes from an actual run. That runner is not in the site repository, because it handles a
-key file; the two scripts above are the part you need to repeat the idea.
+For the circlekit docs website, I used the same process for the
+payment guide too. The script that runs the guide's code also takes a testnet private key
+from a file, deposits test USDC into Gateway (the buyer pays from that balance), and pays
+the endpoint, so the guide's
+expected output (`status: 200`, a Gateway balance that drops by 0.01) comes from an
+actual run. That script is not in the site repository, because it handles a key file;
+the two scripts above are all you need to repeat the idea.
 
 ## 6. What running the docs found
 
-The first time I ran the payment guide's code with a funded test wallet, the payment
+Now, the interesting part. The first time I ran the payment guide's code with a funded test wallet, the payment
 failed:
 
 ```text
@@ -348,45 +366,58 @@ httpx.HTTPStatusError: Payment failed with status 402
 ```
 
 There was no reason in the message. The SDK's unit tests passed, and the code matched
-the README. The cause was outside the repository: circlekit signed payment authorizations
-valid for 4 days, and Circle Gateway no longer accepted that. I confirmed it by sending
-authorizations with different lifetimes to Gateway's verify endpoint (4 and 6 days
-rejected with `authorization_validity_too_short`, 7 days accepted), and by comparing
-versions of Circle's own npm package: 3.0.0 signs for 4 days, and 3.0.4 sets a 7-day
-minimum. The
-SDK's middleware had also replaced Gateway's reason with "Invalid payment signature",
-which is why the error said nothing useful.
+the README. Later, I found that the SDK hid Gateway's reason in two places: the seller's
+middleware replaced it with a generic "Invalid payment signature", and the buyer's error
+message left out the response body.
 
-So a seller and buyer both on circlekit's defaults could not complete a payment, and
-nothing in the repository showed it. The fix went upstream as
-[vyperlang/circle-titanoboa-sdk#5](https://github.com/vyperlang/circle-titanoboa-sdk/pull/5):
-sign for at least 7 days plus a 100 second buffer, and pass Gateway's reason through.
-Then I moved the docs pin to the merge commit, ran the docs again, and the guide's
-payment returned `200`. The troubleshooting section now shows the new error format,
-copied from a run where I made the buyer pay itself:
+What changed was outside the repository. To pay, the buyer signs an authorization that
+lets Gateway move its USDC until an expiry time. circlekit set that expiry 4 days ahead,
+and Circle Gateway required at least 7.
+
+I confirmed it in two ways. First, I sent authorizations with different lifetimes to
+Gateway's verify endpoint: 4 and 6 days were rejected with
+`authorization_validity_too_short`, and 7 days was accepted. Second, I compared versions
+of Circle's own npm package, `@circle-fin/x402-batching`: 3.0.0 sets a 4-day window, and 3.0.4 sets a 7-day minimum.
+
+This bug meant that a seller and a buyer on circlekit's default settings could not
+complete a payment on Arc Testnet, and nothing in the repository showed it. The fix,
+which signs for at least 7 days plus a 100-second buffer, went to the SDK's repository as
+[vyperlang/circle-titanoboa-sdk#5](https://github.com/vyperlang/circle-titanoboa-sdk/pull/5).
+I then changed the pinned commit on the pages to the merge commit, ran the docs again,
+and the guide's payment returned `200`. The fix also passes Gateway's reason through to
+the buyer, and the guide's troubleshooting section now shows that format, copied from a
+run where I made the buyer pay its own address:
 
 ```text
 httpx.HTTPStatusError: Payment failed with status 402: {"error":"Payment verification failed","reason":"self_transfer"}
 ```
 
-This is the argument for docs you can run. A docs page is often the only place where all
-the moving parts meet: the SDK, the payment service, the testnet, and the reader's
-shell. When a service you depend on changes under you, a pinned page that you run catches
-it.
+This is why I think docs should be runnable. A docs page is often the only place where
+all the moving parts of a project meet. Here they were the SDK, the payment service, the
+testnet, and the reader's shell. With so many layers, one part can change and break the
+others, and users lose a working service because a dependency changed underneath it.
+Pinning the version alone would not have caught this, because the service changed, not
+the code. Running the pinned pages is what caught it. This matters more as people build
+with AI coding tools: those tools copy what the docs say, so correct docs let users
+build with your technology faster.
 
 ## 7. Preview, build, and check the links
 
-To see the site while you write, Thally uses `npm run dev` on `http://localhost:3040`.
-Before publishing, the project's `AGENTS.md` lists a `check --ci` run with the CLI version
-the project pins, `npm test` and `npm run build`. The `@latest` CLI used in this article can
-be newer than that pin.
+It helps to see the site while you write. The project's `npm run dev` script serves it
+at `http://localhost:3040`. To build the site and serve the build, use `npm run build`
+and then `npm start`.
 
-If you are on an older Linux, read this before running either. On Ubuntu 20.04, `npm run build` failed for
-me with only `Error: write EPIPE`, on my content and on an untouched scaffold. The cause
+Before you publish, run the checks that the scaffold's `AGENTS.md` file lists: `check --ci`
+with the CLI version pinned in the project, `npm test`, and `npm run build`. The `@latest`
+CLI used in this article can be newer than that pinned version.
+
+If you are on an older Linux, read this before running `npm run build`. On Ubuntu 20.04,
+the build failed for me with only `Error: write EPIPE`, on my content and on an untouched scaffold. The cause
 is a call near the top of `next.config.ts`, `initOpenNextCloudflareForDev()`. It starts
 Cloudflare's `workerd` runtime, and that binary needs a newer glibc than 20.04 ships.
-`npm run dev` loads the same file. The hook is there for Cloudflare bindings during local
-development, so for a local preview you can work in a scratch copy with that one line
+`npm run dev` loads the same file. I did not confirm whether it fails the same way, but
+the workaround below gives you a local preview either way. The hook is there for
+Cloudflare bindings during local development, so for a local preview you can work in a scratch copy with that one line
 commented out:
 
 ```bash
@@ -402,9 +433,10 @@ back, so the `sed` has to follow it. Use `npm run build`, not `npx next build`: 
 `prebuild` script regenerates the compiled pages, and without it the server shows the old
 ones. `npm start` serves on port 3040.
 
-Since `thally check` missed links in step 2, check the built site too. This prints the
-status of each internal `<a href>` in the server-rendered HTML of every sitemap page. It
-does not see the sidebar, which is rendered in the browser, or images:
+Since `thally check` missed links in step 2, check the built site too. With `npm start`
+running, run this in a second terminal. It prints the status of each internal `<a href>`
+in the server-rendered HTML of every page in `/sitemap.xml`. It can miss links that only
+render in the browser, such as parts of the sidebar, and it does not check images:
 
 ```bash
 B=http://localhost:3040
@@ -417,18 +449,19 @@ Every line should start with `200`, apart from `307 /api`, a redirect to the API
 
 ## What you get without extra work
 
-The audience for circlekit includes AI agents, so this part mattered more than usual.
 Every Thally site also serves:
 
 - `/llms.txt` and `/llms-full.txt`, an index and full text for language models,
 - each MDX page as Markdown or JSON (`?format=md`, `?format=json`; in my build the
   generated API operation page returned `404` for both),
-- a read-only MCP server at `/api/mcp`,
+- a read-only [MCP](https://modelcontextprotocol.io) server at `/api/mcp`, which AI tools can use to search and read the docs,
 - `/openapi.json` and `/openapi.yaml` from the spec in step 4.
 
-I did not configure any of these. They came from the starter.
+These came with the starter; I did not configure any of them.
 
 ## Summary
+
+In short, to get a docs site running with Thally and keep it from drifting away from the code, here is what I did:
 
 - Scaffold with `create-thally-docs`, then edit only `src/content/`, `docs.json`,
   `src/data/site.ts` and `openapi.yaml`.
