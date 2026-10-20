@@ -22,7 +22,7 @@ wallet, keys, or Circle account for this page.
     mkdir weather-api && cd weather-api
     python3 -m venv .venv
     source .venv/bin/activate
-    pip install "circle-titanoboa-sdk[examples] @ git+https://github.com/vyperlang/circle-titanoboa-sdk@09828f399731dd3250fb402f7f511046fb202355"
+    pip install "circle-titanoboa-sdk[examples] @ git+https://github.com/vyperlang/circle-titanoboa-sdk@1a05260ff83756fb3db1ad75ee0263c70127bf22"
     ```
 
     The install takes about a minute. The package name is `circle-titanoboa-sdk`,
@@ -36,13 +36,7 @@ wallet, keys, or Circle account for this page.
 
     from fastapi import FastAPI, Request
     from fastapi.responses import JSONResponse
-    import circlekit.server
     from circlekit import create_gateway_middleware
-
-    # Circle Gateway requires payment authorizations valid for at least 7 days;
-    # circlekit 09828f3 defaults to 4 days. Use Circle's own value: 7 days plus a
-    # 100-second buffer. See Troubleshooting in the guide.
-    circlekit.server.DEFAULT_MAX_TIMEOUT_SECONDS = 7 * 24 * 60 * 60 + 100
 
     app = FastAPI(title="Weather API")
 

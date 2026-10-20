@@ -137,4 +137,8 @@ components:
       properties:
         error:
           type: string
-          example: Invalid payment signature
+          example: Payment verification failed
+        reason:
+          type: string
+          description: Circle Gateway's reason when verification fails.
+          example: self_transfer

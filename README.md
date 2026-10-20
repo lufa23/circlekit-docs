@@ -8,7 +8,7 @@ Python SDK for x402 payments through Circle Gateway, built with
 - `docs.json` holds the navigation.
 - `openapi.yaml` describes the example endpoint used in the quickstart.
 
-The code in these docs was run end to end against circlekit commit `09828f3` on Arc
+The code in these docs was run end to end against circlekit commit `1a05260` on Arc
 Testnet, including a funded payment.
 
 ## Work on the docs

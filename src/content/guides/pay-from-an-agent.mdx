@@ -146,30 +146,22 @@ Everything runs on Arc Testnet. The USDC is free test currency.
 
 <AccordionGroup>
   <Accordion title="pay() raises HTTPStatusError: Payment failed with status 402">
-    The client does not include the server's reason. Two common causes:
+    The end of the message is the seller's response, which includes Circle
+    Gateway's reason:
+
+    ```text
+    httpx.HTTPStatusError: Payment failed with status 402: {"error":"Payment verification failed","reason":"self_transfer"}
+    ```
+
+    Common causes:
 
     - **The Gateway balance is zero.** Check with `balances.py` and deposit first.
       Money in the wallet is not enough; payments spend the Gateway balance.
-    - **The authorization window is too short.** circlekit `09828f3` signs
-      payment authorizations valid for 4 days. Circle Gateway currently rejects
-      anything shorter than 7 days with `authorization_validity_too_short`,
-      and the middleware reports this to the client only as
-      `{"error": "Invalid payment signature"}`. The fix is the line already in
-      the Quickstart's `server.py`:
-
-      ```python
-      circlekit.server.DEFAULT_MAX_TIMEOUT_SECONDS = 7 * 24 * 60 * 60 + 100
-      ```
-
-      The buyer signs for whatever window the seller's `402` asks for, so this
-      change on the server is enough.
-  </Accordion>
-  <Accordion title="The server returns Invalid payment signature">
-    The middleware hides Circle's specific reason behind this message. To see it,
-    call Gateway's verify step yourself with the same payload. In the cases
-    tested for these docs the real reason was `authorization_validity_too_short`
-    (see the previous item) or `self_transfer`, which means the buyer and
-    `SELLER_ADDRESS` are the same wallet. Use two different wallets.
+    - **`self_transfer`.** The buyer and `SELLER_ADDRESS` are the same wallet.
+      Use two different wallets.
+    - **`authorization_validity_too_short`.** Gateway rejects authorizations
+      valid for less than 7 days. circlekit commits before `1a05260` signed for
+      4 days. Install the commit pinned in the Quickstart.
   </Accordion>
   <Accordion title="Gateway verify failed (400): paymentPayload.resource.url: Required">
     This appears when you build the payment header yourself with
