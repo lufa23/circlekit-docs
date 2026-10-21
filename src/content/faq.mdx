@@ -1,0 +1,66 @@
+---
+title: FAQ
+description: Short answers to common circlekit questions about test USDC, gas, failed payments, and installation.
+---
+
+Short answers, with a link to the page that covers each one in full.
+
+## Where do I get test USDC?
+
+From Circle's faucet at [faucet.circle.com](https://faucet.circle.com). Choose
+**Arc Testnet**, paste your wallet address, and request USDC. Test USDC has no
+real value. [Pay from a Python agent](/guides/pay-from-an-agent) walks through it,
+including how to create the wallet.
+
+## Do I need ETH or another coin for gas?
+
+No. On Arc Testnet, USDC is also the gas token, so the faucet's USDC covers the
+approval and deposit transactions. The x402 payments themselves cost the buyer no
+gas: Circle Gateway settles them in batches.
+
+## Why does my agent still get a 402 after paying?
+
+`GatewayClient.pay()` raises `HTTPStatusError: Payment failed with status 402`, and
+the end of the message is the seller's response, including Gateway's reason when
+Gateway rejected the payment. The usual causes:
+
+- **`insufficient_balance`.** Payments spend the Gateway balance, not the wallet.
+  Deposit first, then check with `balances.py`.
+- **`self_transfer`.** The buyer and `SELLER_ADDRESS` are the same wallet. Use two
+  different wallets.
+- **`authorization_validity_too_short`.** See the next question.
+
+The [troubleshooting section](/guides/pay-from-an-agent#troubleshooting) of the
+guide has the full list.
+
+## What does authorization_validity_too_short mean?
+
+Gateway rejected the payment because the buyer's signed authorization expires too
+soon. In tests, Gateway rejected 4- and 6-day authorizations and accepted 7 days.
+circlekit up to commit `09828f3` signed for 4 days by default. Install the commit
+pinned in the [Quickstart](/quickstart), which signs for at least 7 days.
+
+## Why does pip install circlekit fail?
+
+circlekit is not on PyPI. The package is named `circle-titanoboa-sdk`, you install
+it from GitHub with the command in the [Quickstart](/quickstart), and you import it
+as `circlekit`.
+
+## What is the difference between the wallet balance and the Gateway balance?
+
+The wallet balance is USDC in your address on the blockchain. The Gateway balance
+is USDC you deposited into Circle Gateway, and it is what x402 payments spend.
+`balances.py` in the [guide](/guides/pay-from-an-agent) prints both.
+
+## What does the 402 response contain?
+
+When no payment was sent, the `402` contains the price, the network, the USDC token address, and the seller's address, in the
+response body and, base64-encoded, in the `PAYMENT-REQUIRED` header. The
+[API overview](/api/introduction) and [Payment headers](/api/authentication)
+describe each field. A `402` for a rejected payment contains an `error` message
+and Gateway's `reason` instead.
+
+## Does it work on networks other than Arc Testnet?
+
+These docs only test Arc Testnet. circlekit lists other networks in its
+[README](https://github.com/vyperlang/circle-titanoboa-sdk#multi-chain-support).

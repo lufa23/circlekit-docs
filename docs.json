@@ -44,6 +44,12 @@
           ]
         },
         {
+          "group": "Help",
+          "pages": [
+            "faq"
+          ]
+        },
+        {
           "group": "About these docs",
           "pages": [
             "articles/docs-you-can-run",
@@ -83,31 +89,36 @@
       {
         "question": "Where do I get test USDC?",
         "expect": [
-          "/guides/pay-from-an-agent"
+          "/guides/pay-from-an-agent",
+          "/faq"
         ]
       },
       {
         "question": "Do I need ETH for gas on Arc Testnet?",
         "expect": [
-          "/guides/pay-from-an-agent"
+          "/guides/pay-from-an-agent",
+          "/faq"
         ]
       },
       {
         "question": "My agent still gets a 402 after paying",
         "expect": [
-          "/guides/pay-from-an-agent"
+          "/guides/pay-from-an-agent",
+          "/faq"
         ]
       },
       {
         "question": "payment rejected with authorization_validity_too_short",
         "expect": [
-          "/guides/pay-from-an-agent"
+          "/guides/pay-from-an-agent",
+          "/faq"
         ]
       },
       {
         "question": "What does the 402 response body contain?",
         "expect": [
-          "/api/introduction"
+          "/api/introduction",
+          "/faq"
         ]
       }
     ]

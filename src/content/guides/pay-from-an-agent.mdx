@@ -163,8 +163,9 @@ Everything runs on Arc Testnet. The USDC is free test currency.
 
     Common causes:
 
-    - **The Gateway balance is zero.** Check with `balances.py` and deposit first.
-      Money in the wallet is not enough; payments spend the Gateway balance.
+    - **`insufficient_balance`.** The Gateway balance is too low. Check with
+      `balances.py` and deposit first. Money in the wallet is not enough; payments
+      spend the Gateway balance.
     - **`self_transfer`.** The buyer and `SELLER_ADDRESS` are the same wallet.
       Use two different wallets.
     - **`authorization_validity_too_short`.** In tests, Gateway rejected 4- and

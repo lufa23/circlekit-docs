@@ -23,7 +23,7 @@ To build a docs site like it with Thally, follow the steps below.
 ## What you need
 
 Node.js (I used 22), Python 3.10 or later, `git` and `curl`, plus `rsync` for step 7.
-No wallet or keys are needed.
+For step 8, a GitHub account and a Thally Cloud account. No wallet or keys are needed.
 
 ## 1. Scaffold the site
 
@@ -100,7 +100,8 @@ blocks. Three more links point at removed pages, and the checker does not report
   `/api/introduction` and "API reference". The homepage text is still the starter's,
   so rewrite it for your product while you are there.
 - The `Changelog` entry in the `links` list of `src/data/site.ts`, which becomes the
-  footer link on every page. Delete that line.
+  footer link on every page. Delete that line. (If you will publish on Thally Cloud,
+  read step 8 first: Cloud adds a Changelog link back.)
 - A link to `/api/authentication` inside a `<Note>` in `src/content/api/introduction.mdx`.
   That page also still describes the starter's sample API, so replace the whole file:
 
@@ -447,6 +448,43 @@ done | sort -u | while read -r h; do echo "$(curl -s -o /dev/null -w '%{http_cod
 
 Every line should start with `200`, apart from `307 /api`, a redirect to the API overview.
 
+## 8. Publish on Thally Cloud
+
+Thally Cloud builds the site from a GitHub repository and serves it at
+`<name>.thally.app`. The scaffold is already a git repository with one commit. Create an
+empty repository on GitHub, commit your changes, and push them to its `main` branch:
+
+```bash
+git add -A && git commit -m "Add the circlekit docs"
+git remote add origin https://github.com/<you>/circlekit-docs.git
+git push origin HEAD:main
+```
+
+Then sign in at [app.thally.io](https://app.thally.io) and create a site:
+
+1. **Site details:** name the site and choose its address (`circlekit-docs` gives
+   `circlekit-docs.thally.app`).
+2. **Docs source:** choose **Use an existing repository** and install the Thally GitHub
+   App. The prompt there says "for a fresh site, choose All repositories", but your site is
+   not fresh: choose **Only select repositories** and pick the one repository you just
+   pushed.
+3. Continue past **Product sources** and **Knowledge surfaces** to **Review and
+   publish**, and publish. Signing in started a trial for me.
+
+After that, each time I pushed to `main`, the live site updated without another publish.
+
+Two things surprised me after publishing:
+
+- **Cloud replaced the site name and footer links from `site.ts`.** The live site used
+  the Cloud site name, and its footer had links I had not written: Support, a GitHub link
+  to the docs repository instead of the SDK, and a Changelog link to a page I had deleted
+  in step 2. The name and description are under Site settings in Cloud and go live with
+  the next publish. For the Changelog link, I added a changelog page, which also gives the
+  site an RSS feed. I left the other two links as they are.
+- **Check the live site too.** Run the link check from step 7 with
+  `B=https://<name>.thally.app`. A crawl of the live site is how I found the Changelog
+  `404`.
+
 ## What you get without extra work
 
 Every Thally site also serves:
@@ -470,3 +508,5 @@ In short, to get a docs site running with Thally and keep it from drifting away 
   and it misses some links.
 - When a run fails, fix the cause where it lives. For circlekit, that meant a pull request
   to the SDK, then a new pin and another run.
+- Publish from GitHub with Thally Cloud, give its GitHub App access to one repository,
+  and check the live site's links once it is up.
