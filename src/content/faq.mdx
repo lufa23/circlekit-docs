@@ -36,7 +36,9 @@ guide has the full list.
 ## What does authorization_validity_too_short mean?
 
 Gateway rejected the payment because the buyer's signed authorization expires too
-soon. In tests, Gateway rejected 4- and 6-day authorizations and accepted 7 days.
+soon. Circle's [seller quickstart](https://developers.circle.com/gateway/nanopayments/quickstarts/seller) asks for at least 7 days plus a small
+buffer (Circle's [EIP-3009 signing page](https://developers.circle.com/gateway/nanopayments/howtos/eip-3009-signing) says 3 days). In tests, Gateway rejected 4- and
+6-day authorizations and accepted 7 days.
 circlekit up to commit `09828f3` signed for 4 days by default. Install the commit
 pinned in the [Quickstart](/quickstart), which signs for at least 7 days.
 

@@ -77,11 +77,11 @@ wallet, keys, or Circle account for this page.
 
     `process_request` does the whole x402 exchange: it returns a `402` response
     when there is no valid payment, and payment details once Circle Gateway has
-    settled it.
+    accepted it for settlement.
   </Step>
   <Step title="Start the server">
-    `SELLER_ADDRESS` is the wallet that receives payments. Any valid address works
-    for this page. Use one you control if you plan to continue to the guide, and
+    `SELLER_ADDRESS` is the wallet that receives payments. Any value works
+    for this page, including the placeholder below. Use an address you control if you plan to continue to the guide, and
     make it a different wallet from the one that will pay.
 
     ```bash

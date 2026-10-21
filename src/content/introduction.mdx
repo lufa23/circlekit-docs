@@ -32,8 +32,8 @@ x402 reuses the HTTP status code `402 Payment Required`:
    in a `PAYMENT-REQUIRED` header.
 3. The client signs a payment authorization and repeats the request with a
    `PAYMENT-SIGNATURE` header.
-4. The server asks Circle Gateway to verify and settle the payment, then returns
-   the content with `200`.
+4. The server sends the payment to Circle Gateway, which verifies it and accepts
+   it for settlement. The server then returns the content with `200`.
 
 ```mermaid
 sequenceDiagram
@@ -49,7 +49,7 @@ sequenceDiagram
     S-->>B: 200 with the content and PAYMENT-RESPONSE
 ```
 
-Circle Gateway batches these payments, so the buyer does not pay gas per request.
+Gateway settles on-chain later, in batches, so the buyer does not pay gas per request.
 The buyer deposits USDC into Gateway once and spends from that balance.
 
 ## Who these docs are for

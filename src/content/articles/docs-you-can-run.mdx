@@ -25,9 +25,13 @@ To build a docs site like it with Thally, follow the steps below.
 Node.js (I used 22), Python 3.10 or later, `git` and `curl`, plus `rsync` for step 7.
 For step 8, a GitHub account and a Thally Cloud account. No wallet or keys are needed.
 
+I ran these commands in bash on Ubuntu 20.04, and step 7 uses GNU `sed`.
+On macOS or Windows, use WSL or adjust the commands.
+
 ## 1. Scaffold the site
 
-First, scaffold the site:
+I started from [Thally's quickstart](https://docs.thally.io/quickstart), which scaffolds
+the site with one command. The quickstart names the folder `my-docs`; I used `circlekit-docs`:
 
 ```bash
 npx --yes create-thally-docs@latest circlekit-docs --yes --install
@@ -222,13 +226,11 @@ requirements it sends back. No wallet or keys needed.
 </Steps>
 ````
 
-Two things to notice here. First, the install line pins circlekit to a full commit
-SHA, so every reader installs the exact version of the code the page was tested with.
-Second, the page shows the expected output, so you can compare what you get with what
-you should get.
+The install line pins circlekit to a full commit SHA, so readers install the code the
+page was tested with, and the page shows the expected output to compare against.
 
 The page asks for a `SELLER_ADDRESS`, the wallet that would receive the payment. Nothing
-is paid in the Quickstart, so any valid address works; the script in step 5 uses
+is paid in the Quickstart, so any value works, including the placeholder; the script in step 5 uses
 `0x000000000000000000000000000000000000dEaD`.
 
 ## 4. Describe the endpoint in OpenAPI
@@ -258,7 +260,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Payment settled. The body is the paid content.
+          description: Payment accepted for settlement. The body is the paid content.
         '402':
           description: Payment required, or the payment was rejected.
 ```
@@ -359,7 +361,7 @@ the two scripts above are all you need to repeat the idea.
 
 ## 6. What running the docs found
 
-Now, the interesting part. The first time I ran the payment guide's code with a funded test wallet, the payment
+The first time I ran the payment guide's code with a funded test wallet, the payment
 failed:
 
 ```text
@@ -373,7 +375,8 @@ message left out the response body.
 
 What changed was outside the repository. To pay, the buyer signs an authorization that
 lets Gateway move its USDC until an expiry time. circlekit set that expiry 4 days ahead by default,
-and Circle Gateway required at least 7.
+and Circle Gateway required at least 7 (Circle's [seller quickstart](https://developers.circle.com/gateway/nanopayments/quickstarts/seller) says
+"at least 7 days plus a small buffer").
 
 I confirmed it in two ways. First, I sent authorizations with different lifetimes to
 Gateway's verify endpoint: 4 and 6 days were rejected with
@@ -393,14 +396,8 @@ run where I made the buyer pay its own address:
 httpx.HTTPStatusError: Payment failed with status 402: {"error":"Payment verification failed","reason":"self_transfer"}
 ```
 
-This is why I think docs should be runnable. A docs page is often the only place where
-all the moving parts of a project meet. Here they were the SDK, the payment service, the
-testnet, and the reader's shell. With so many layers, one part can change and break the
-others, and users lose a working service because a dependency changed underneath it.
 Pinning the version alone would not have caught this, because the service changed, not
-the code. Running the pinned pages is what caught it. This matters more as people build
-with AI coding tools: those tools copy what the docs say, so correct docs let users
-build with your technology faster.
+the code. Running the pinned pages is what caught it.
 
 ## 7. Preview, build, and check the links
 
@@ -419,7 +416,8 @@ Cloudflare's `workerd` runtime, and that binary needs a newer glibc than 20.04 s
 `npm run dev` loads the same file. I did not confirm whether it fails the same way, but
 the workaround below gives you a local preview either way. The hook is there for
 Cloudflare bindings during local development, so for a local preview you can work in a scratch copy with that one line
-commented out:
+commented out. `../preview` is a new scratch folder next to the project; `--delete`
+makes it an exact copy, so do not point it at a folder that holds anything else:
 
 ```bash
 rsync -a --delete --exclude .next ./ ../preview/ && cd ../preview
@@ -446,7 +444,7 @@ for p in $(curl -s $B/sitemap.xml | grep -o '<loc>[^<]*' | sed 's#<loc>https\?:/
 done | sort -u | while read -r h; do echo "$(curl -s -o /dev/null -w '%{http_code}' "$B$h") $h"; done
 ```
 
-Every line should start with `200`, apart from `307 /api`, a redirect to the API overview.
+In my build, every line started with `200`, apart from `307 /api`, a redirect to the API overview.
 
 ## 8. Publish on Thally Cloud
 
@@ -499,7 +497,7 @@ These came with the starter; I did not configure any of them.
 
 ## Summary
 
-In short, to get a docs site running with Thally and keep it from drifting away from the code, here is what I did:
+What I would do again:
 
 - Scaffold with `create-thally-docs`, then edit only `src/content/`, `docs.json`,
   `src/data/site.ts` and `openapi.yaml`.
