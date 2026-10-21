@@ -4,14 +4,14 @@ navTitle: How these docs were built
 description: How the circlekit docs website was built with Thally, and how running the code on its pages found a real payment bug.
 ---
 
-circlekit is a Python SDK for x402 payments through Circle Gateway. I ported it from TypeScript to Python, and until now it had no docs beyond a README and a few examples. This article shows how I built its docs site with [Thally](https://www.thally.io), a framework for documentation sites, and how running the code on its pages helped me spot a bug: payments made with circlekit's default settings were rejected by Circle Gateway.
+[circlekit](https://github.com/vyperlang/circle-titanoboa-sdk) is a Python SDK for x402 payments through Circle Gateway. I ported it from TypeScript to Python, and until now it had no docs beyond a README and a few examples. This article shows how I built its docs site with [Thally](https://www.thally.io), a framework for documentation sites, and how running the code on its pages helped me spot a bug: payments made with circlekit's default settings were rejected by Circle Gateway.
 
 If these names are new to you, here is what they mean:
 
 - **[x402](https://www.x402.org)** is a protocol that lets a program pay for an API call on its own. It reuses the HTTP status `402 Payment Required`: the server answers `402` with a price, and the client signs a payment and sends the request again. The client that pays is the buyer; the API that gets paid is the seller.
 - **[USDC](https://www.circle.com/usdc)** is a stablecoin: a digital token on a blockchain whose value is tied to the US dollar (Circle, which issues it, says it can be redeemed 1:1 for dollars). Because it lives on a blockchain, a program can pay with it directly, with no card or bank account.
 - **[Circle Gateway](https://developers.circle.com/gateway-nanopayments)** is Circle's USDC payment service. The buyer deposits USDC into it once, and Gateway checks each payment and pays sellers in batches instead of one blockchain transaction per payment.
-- A **testnet** is a test copy of a blockchain, where tokens have no real value and you get them free from a [faucet](https://faucet.circle.com). circlekit's examples run on Arc Testnet, the testnet of [Arc](https://docs.arc.io), Circle's blockchain.
+- A **testnet** is a test network of a blockchain, where tokens have no real value and you get them free from a [faucet](https://faucet.circle.com). circlekit's examples run on Arc Testnet, the testnet of [Arc](https://docs.arc.io), Circle's blockchain.
 - A **wallet** is an address plus a private key. The buyer signs payments with its key, and the seller receives them at its address.
 
 The SDK's source is at [vyperlang/circle-titanoboa-sdk](https://github.com/vyperlang/circle-titanoboa-sdk): the package is named `circle-titanoboa-sdk`, is installed from GitHub, and is imported as `circlekit`.
