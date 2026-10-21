@@ -57,14 +57,16 @@ the framework updates for you, so leave those alone.
 
 Developers interested in circlekit are mainly Python developers who want to charge for an API, or want their agent to pay for one. For this reason, the docs site has three parts:
 
-- a **Quickstart**, where no wallet is needed. This lowers the onboarding friction: you run a paid endpoint and read its `402` reply,
+- a **Quickstart** that needs no wallet, so you can try circlekit before you set one up: you run a paid endpoint and read its `402` reply,
 - a **guide** that makes a real payment with test money on Arc Testnet,
 - an **API reference** for the example endpoint.
 
 The project that `create-thally-docs` generates (Thally calls it the starter) comes with
 sample pages. Remove the ones you will not use. The starter's API overview suggests
 rewriting its Authentication page rather than deleting it. On the circlekit docs website I rewrote it, but
-for this walkthrough I wanted the API tab to have one page, so I removed it:
+for this walkthrough I wanted the API tab to have one page, so I removed it. The walkthrough
+builds a smaller site than the live one: the homepage, the Quickstart and the API reference.
+The live site's payment guide was written and tested the same way. To remove the pages:
 
 ```bash
 rm -r src/content/guides src/content/components.mdx src/content/customization.mdx \
@@ -141,8 +143,8 @@ reader saves to a file a title, which is the file name:
 The title shows above the block on the site, and in step 5 a short script uses it to
 pull the code out and run it.
 
-Replace `src/content/quickstart.mdx` with this shortened version of the circlekit
-Quickstart:
+Replace `src/content/quickstart.mdx` with this shortened version of the
+[circlekit Quickstart](/quickstart):
 
 ````mdx
 ---
@@ -407,7 +409,9 @@ and then `npm start`.
 
 Before you publish, run the checks that the scaffold's `AGENTS.md` file lists: `check --ci`
 with the CLI version pinned in the project, `npm test`, and `npm run build`. The `@latest`
-CLI used in this article can be newer than that pinned version.
+CLI used in this article can be newer than that pinned version. On Ubuntu 20.04, one
+starter test (cURL quoting in the code samples) failed for me on an untouched scaffold
+too, and two slow tests can time out on a busy machine.
 
 If you are on an older Linux, read this before running `npm run build`. On Ubuntu 20.04,
 the build failed for me with only `Error: write EPIPE`, on my content and on an untouched scaffold. The cause
@@ -426,7 +430,7 @@ npm run build && npm start
 ```
 
 Leave the line in the copy you publish. After each content change, stop the running
-`npm start` (Ctrl+C, it holds port 3040), go back to the project directory and run all
+`npm start` (Ctrl+C, it holds port 3040), run `cd ../circlekit-docs` and then all
 three lines again: the `rsync` copies the original `next.config.ts`
 back, so the `sed` has to follow it. Use `npm run build`, not `npx next build`: its
 `prebuild` script regenerates the compiled pages, and without it the server shows the old
@@ -458,6 +462,10 @@ git remote add origin https://github.com/<you>/circlekit-docs.git
 git push origin HEAD:main
 ```
 
+If `git commit` asks for your name and email, set them with `git config --global user.name "Your Name"` and
+`git config --global user.email you@example.com`. GitHub does not accept your account password over HTTPS;
+use a personal access token or `gh auth login`.
+
 Then sign in at [app.thally.io](https://app.thally.io) and create a site:
 
 1. **Site details:** name the site and choose its address (`circlekit-docs` gives
@@ -467,7 +475,7 @@ Then sign in at [app.thally.io](https://app.thally.io) and create a site:
    not fresh: choose **Only select repositories** and pick the one repository you just
    pushed.
 3. Continue past **Product sources** and **Knowledge surfaces** to **Review and
-   publish**, and publish. Signing in started a trial for me.
+   publish**, and publish. Signing in started a free trial for me.
 
 After that, each time I pushed to `main`, the live site updated without another publish.
 
@@ -477,8 +485,9 @@ Two things surprised me after publishing:
   the Cloud site name, and its footer had links I had not written: Support, a GitHub link
   to the docs repository instead of the SDK, and a Changelog link to a page I had deleted
   in step 2. The name and description are under Site settings in Cloud and go live with
-  the next publish. For the Changelog link, I added a changelog page, which also gives the
-  site an RSS feed. I left the other two links as they are.
+  the next publish. For the Changelog link, I added the page back: a `src/content/changelog.mdx`
+  with one `<Update>` entry, and `"changelog"` in a `pages` list in `docs.json`.
+  It also gives the site an RSS feed. I left the other two links as they are.
 - **Check the live site too.** Run the link check from step 7 with
   `B=https://<name>.thally.app`. A crawl of the live site is how I found the Changelog
   `404`.

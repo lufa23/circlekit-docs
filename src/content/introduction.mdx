@@ -44,8 +44,8 @@ sequenceDiagram
     S-->>B: 402 with PAYMENT-REQUIRED (price, network, payTo)
     Note over B: Signs a USDC payment authorization
     B->>S: GET /forecast with PAYMENT-SIGNATURE
-    S->>G: Verify and settle the payment
-    G-->>S: Settlement accepted
+    S->>G: Verify and submit for settlement
+    G-->>S: Accepted for settlement
     S-->>B: 200 with the content and PAYMENT-RESPONSE
 ```
 

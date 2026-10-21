@@ -143,6 +143,8 @@ Everything runs on Arc Testnet. The USDC is free test currency.
     paid: 0.010000 USDC
     ```
 
+    In your output, `paid_by` is your test wallet's address instead of `0xYourTestWallet`.
+
     `pay()` made the unpaid request, read the `402`, signed an authorization, and
     retried with the `PAYMENT-SIGNATURE` header. No gas was spent on the payment
     itself. Run `python balances.py` once more and the Gateway balance reads
